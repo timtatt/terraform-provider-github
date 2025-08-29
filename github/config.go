@@ -26,6 +26,7 @@ type Config struct {
 	RetryableErrors  map[int]bool
 	MaxRetries       int
 	ParallelRequests bool
+	owner            *Owner
 }
 
 type Owner struct {
@@ -144,6 +145,9 @@ func (c *Config) ConfigureOwner(owner *Owner) (*Owner, error) {
 // Meta returns the meta parameter that is passed into subsequent resources
 // https://godoc.org/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#ConfigureFunc
 func (c *Config) Meta() (interface{}, error) {
+	if c.owner != nil {
+		return c.owner, nil
+	}
 
 	var client *http.Client
 	if c.Anonymous() {
@@ -168,9 +172,12 @@ func (c *Config) Meta() (interface{}, error) {
 	owner.StopContext = context.Background()
 
 	_, err = c.ConfigureOwner(&owner)
+
 	if err != nil {
 		return &owner, err
 	}
+
+	c.owner = &owner
 	return &owner, nil
 }
 
